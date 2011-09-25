@@ -1,0 +1,40 @@
+#!/usr/bin/env python2.7
+# Copyright (C) Punyashloka Biswal <punya.biswal@gmail.com> 2011
+
+from __future__ import print_function
+import argparse, csv
+
+parser = argparse.ArgumentParser(
+    description='find significant differences between CSV files',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument(
+    'inputs', help='input CSV file',  metavar='<INPUT.CSV>', nargs='+',
+    type=lambda filename:
+        dict(((row[1], row[2]), float(row[3]))
+             for row in csv.reader(argparse.FileType('rU')(filename))
+             if row[1] != '' and row[2] != ''))
+parser.add_argument(
+    '--out', help='output CSV file', metavar='<OUTPUT.CSV>',
+    type=lambda string: csv.writer(argparse.FileType('wb')(string)))
+parser.add_argument(
+    '--lower', type=float, default=-0.45, help='negative significant limit')
+parser.add_argument(
+    '--upper', type=float, default=0.45,  help='positive significant limit')
+
+args = parser.parse_args()
+
+def sig(num):
+    if num is None:
+        return ''
+    elif num < args.lower:
+        return '-'
+    elif num > args.upper:
+        return '+'
+    else:
+        return '?'
+
+args.out.writerows(
+    list(key) + [sig(inp.get(key, None))
+                 for inp in args.inputs]
+    for key in set().union(*[inp.keys()
+                             for inp in args.inputs]))
